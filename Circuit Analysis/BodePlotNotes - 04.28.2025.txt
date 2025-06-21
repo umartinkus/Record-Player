@@ -1,0 +1,4 @@
+1. Bode plot from 10Hz to 100kHz
+2. Sampling rate 215 points/decade
+3. Simliar circuit as Figure 9.3 of Self, but R2 = 1M//1M, R1 = 39K, C2 = 1nF and C1 omitted because the equivalent series capacitance is about 1nF, C0 = 10uF, Rin and R0 are as shown in the figure, and an inductor of 3.5mH inductance is used to simulate the MM cartridge
+4. The plot appears to have a zero at 500Hz, but the corners are not following the RIAA equalization curve we'd expect.
