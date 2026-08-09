@@ -1,0 +1,96 @@
+* ============================================================
+* RIAA Phono Preamplifier - single channel (SPICE netlist, first draft)
+*
+* Topology: Douglas Self, "Small Signal Audio Design" - single
+*   active-stage, non-inverting feedback RIAA equalizer.
+*
+* Op-amp: OPA1642 is the selected final part. This netlist uses an
+*   IDEAL_OPAMP placeholder (defined below) for first-pass topology
+*   and frequency-response verification. Swap in TI's real OPA1642
+*   SPICE subcircuit (download from TI's product page) before
+*   trusting noise, slew-rate, bandwidth, or headroom/clipping
+*   results - the ideal model below has infinite gain-bandwidth and
+*   does NOT clip at any supply rail, so it cannot show overload
+*   behavior. To swap: replace the "X1 vin fb vout IDEAL_OPAMP" line
+*   with the real part's subcircuit call (check its actual pin order
+*   in the downloaded .lib - don't assume it matches IDEAL_OPAMP's
+*   3-pin inP/inN/out order; real op-amp models usually need V+ and
+*   V- power pins too, e.g. "X1 vin fb VCC VEE vout OPA1642").
+*
+* Component values: AS-BUILT standard-value parts (nearest E96/E24
+*   to Self's exact book values - see project log for the full
+*   tolerance-vs-standard-value table). Update C2 here if you decide
+*   to combine two parts for tighter accuracy (book value 1.75nF;
+*   this draft uses the single nearest-standard 1.8nF part).
+*
+* Ground reference note: this circuit's "0" node is the AUDIO ground
+*   reference for THIS channel only. When integrating with
+*   power_supply.cir for the full system, tie this "0" to the PSU's
+*   VGND (virtual ground) net - NOT to true circuit ground/PGND. See
+*   the integration note at the bottom of power_supply.cir.
+*
+* Stereo: duplicate this entire netlist with all node names and
+*   reference designators suffixed (e.g. _L / _R) for the second
+*   channel. Both channels can share one physical OPA1642 package
+*   (channel A = one stereo channel, channel B = the other) rather
+*   than needing two separate ICs.
+* ============================================================
+
+.subckt IDEAL_OPAMP inP inN out
+* Very high gain, near-infinite input impedance, zero output
+* impedance behavioral op-amp model - topology verification only.
+* No slew rate, no noise, no output clipping modeled. Standard SPICE
+* syntax (E-element), portable to LTspice, ngspice (KiCad's built-in
+* simulator), and others.
+Ein out 0 inP inN 1MEG
+Rin_ideal inP inN 1G
+.ends IDEAL_OPAMP
+
+* --- Cartridge equivalent circuit (Audio-Technica AT-VM95E) ---
+* Ideal EMF source in series with the coil's DC resistance and
+* inductance, per the datasheet. 4mV magnitude = the datasheet
+* reference output at 1kHz / 5cm/s.
+Vcart cart_emf 0 AC 4m 0
+Rcoil cart_emf cart_mid 485
+Lcoil cart_mid vin 550m
+
+* --- Cartridge loading network, at the preamp input node ---
+Rin_load vin 0 47k
+* Placeholder total shunt capacitance (headshell wiring + tonearm +
+* interconnect cable, all combined). Target 100-200pF TOTAL per the
+* AT-VM95E spec. This value is a placeholder until the real tonearm
+* wiring capacitance is measured once the mechanicals exist - see
+* project log, "cartridge loading network" section. Recommend making
+* the real on-board part trimmable/selectable rather than fixed.
+Cload vin 0 150p
+
+* --- Op-amp (placeholder - see header note above) ---
+X1 vin fb vout IDEAL_OPAMP
+
+* --- Feedback network: R0/C0 ground leg ---
+* Sets DC gain to unity and realizes the ~20Hz subsonic/rumble
+* protection pole (R0*C0 ~= 7960us, matches the IEC RIAA amendment
+* time constant almost exactly) - this is what keeps DC and subsonic
+* content from being amplified by the full RIAA gain.
+R0 fb nA 1k
+C0 nA 0 8.2u
+
+* --- Feedback network: R1||C1 in series with R2||C2 ---
+* R1*C1 = 3180us (50Hz pole). R2*C2 = 75us (2122Hz pole). The 500Hz
+* breakpoint is not a direct RC product - it emerges from the
+* interaction of these two branches (see Lipshitz, "On RIAA
+* Equalization Networks", JAES 1979).
+R1 vout nB 511k
+C1 vout nB 6.2n
+R2 nB fb 43.2k
+C2 nB fb 1.8n
+
+* --- Analysis ---
+* AC sweep for the Bode/RIAA-conformance check (cross-check this
+* against riaa_amp_tf.m / riaa_bode_tolerance_analysis.m - with the
+* ideal op-amp above, the two should match closely since both assume
+* an ideal amplifier).
+.ac dec 100 10 100k
+.op
+
+.end

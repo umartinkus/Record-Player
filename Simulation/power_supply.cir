@@ -1,0 +1,72 @@
+* ============================================================
+* Power Supply - single 24V input, virtual-ground split for the
+*   audio (preamp) branch, isolated black-box load for the motor
+*   branch (first draft SPICE netlist)
+*
+* Raw input: a COTS 24V DC brick (not modeled internally - Vraw_src
+*   below just represents that brick's output as an ideal 24V source
+*   for simulation purposes).
+*
+* See the project log and motor-branch-interface-spec.md for the
+*   full reasoning behind this topology and the motor branch's
+*   interface contract (current budget, ground-return requirement,
+*   conducted-noise budget).
+* ============================================================
+
+.subckt IDEAL_OPAMP inP inN out
+Ein out 0 inP inN 1MEG
+Rin_ideal inP inN 1G
+.ends IDEAL_OPAMP
+
+* --- Raw input, reverse-polarity protection, fusing ---
+* SAFETY-SENSITIVE: exact diode part/rating and fuse current rating
+* are reserved for your sign-off per the project's working agreements
+* - the values below are placeholders for first-draft simulation
+* only, NOT a final safety-component selection.
+Vraw_src raw_in PGND DC 24
+Dpol raw_in vraw_pol D_generic
+.model D_generic D(IS=1e-9 RS=0.05 N=1.05 BV=100)   ; generic diode approximation - CONFIRM REAL PART/RATING WITH USER
+Rfuse vraw_pol VRAW 0.05                             ; fuse modeled as its normal-operation resistance only (not a blow model) - CONFIRM RATING WITH USER
+
+Cbulk VRAW PGND 470u        ; raw-rail bulk reservoir/filter capacitor
+
+* --- Virtual ground generator (audio branch reference) ---
+* Reference implementation shown here: resistive divider + unity-
+* gain buffer, for low output impedance at the virtual-ground node.
+* Could be replaced with a dedicated rail-splitter IC (e.g. TLE2426 -
+* likely fewer parts than this discrete version) once you're ready to
+* finalize the part - this discrete version is a first-draft
+* reference you can simulate with generic parts today.
+Rvg1 VRAW vg_sense 10k
+Rvg2 vg_sense PGND 10k
+Cvg vg_sense PGND 10u
+Xvg vg_sense VGND VGND IDEAL_OPAMP    ; unity-gain buffer -> VGND
+* (Replace IDEAL_OPAMP here with a real, cheap general-purpose op-amp
+* subcircuit when finalizing - this buffer isn't in the audio signal
+* path, so it does NOT need OPA1642-grade noise/precision.)
+
+* --- Audio branch rails, as seen by riaa_preamp.cir ---
+* Integration note: tie the preamp circuit's "0" (audio ground) net
+* to VGND here, and its "+rail"/"-rail" nets to VRAW and PGND
+* respectively. With VRAW=24V and VGND sitting at the ~12V midpoint,
+* the preamp effectively sees a symmetric +/-12V dual supply built
+* from a single raw rail.
+
+* --- Motor branch: BLACK BOX per motor-branch-interface-spec.md ---
+* NOT a real implementation - modeled here only as a current step to
+* test PSU-level behavior (does VRAW/VGND sag or destabilize when the
+* motor branch draws its full budgeted current?). Real motor branch
+* (regulator/driver, exact voltage) is still TBD pending motor
+* selection, and must independently meet the current, ground-return,
+* and conducted-noise requirements in the interface spec regardless
+* of its internal design - this load model is just a stand-in for
+* "the worst case the interface spec allows," not a design.
+* Steps from 0 to the 200mA continuous budget at t=2ms, held - watch
+* VGND and VRAW in the transient plot for any sag/disturbance.
+Imotor_load VRAW PGND PULSE(0 200m 2m 10u 10u 50m 100m)
+
+* --- Analysis ---
+.op
+.tran 0 20m 0 10u    ; watch V(VRAW), V(VGND) settle, then respond to the motor current step at t=2ms
+
+.end

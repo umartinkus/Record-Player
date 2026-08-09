@@ -37,6 +37,7 @@ clear; clc; close all;
 %  book's exact numbers (riaa_amp_tf's zero-argument default uses the
 %  book's exact values; here we use the nearest standard E96/E24 parts
 %  actually going on the board, per the tolerance/sourcing discussion).
+% Reference: Douglas Self's Small Signal Audio Design (2024)
 R0 = 1e3;      C0 = 7.96e-6;    % electrolytic, loose tolerance regardless of nominal
 R1 = 511e3;    C1 = 6.2e-9;
 R2 = 43.2e3;   C2 = 1.8e-9;     % update this (and its tolerance below) if you

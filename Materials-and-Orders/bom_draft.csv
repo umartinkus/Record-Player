@@ -1,0 +1,21 @@
+RefDes,Circuit,Value,Package,QtyOnBoard,JLCPCB Tier (est.),Notes
+U1,Preamp,OPA1642 (dual op-amp),SOIC-8,1,Extended (~$3 one-time; confirm),Serves both stereo channels - op-amp A = channel L, op-amp B = channel R
+R_IN (L+R),Preamp,47k,0805 1% (E96),2,Basic,Cartridge load resistor per AT-VM95E spec
+R0 (L+R),Preamp,1k,0805 1% (E96),2,Basic,
+C0 (L+R),Preamp,8.2uF electrolytic,THT or SMD polymer,2,Extended (est.),Subsonic pole - loose tolerance is fine here
+R1 (L+R),Preamp,511k,0805 1% (E96),2,Basic,Nearest standard to book value 513.5k (0.49% error)
+C1 (L+R),Preamp,6.2nF,C0G/NP0 or film 5%,2,Extended,>100pF so not in JLCPCB's Basic C0G range
+R2 (L+R),Preamp,43.2k,0805 1% (E96),2,Basic,Nearest standard to book value 42.86k (0.79% error)
+C2 (L+R),Preamp,1.8nF,C0G/NP0 or film 5%,2,Extended,"Nearest standard to book value 1.75nF (2.86% error) - candidate for combining two parts (e.g. 1.5nF+220pF) if tighter accuracy wanted, pending the tolerance sweep script's result"
+Cload (L+R),Preamp,150p (placeholder),X7R 0805,2,Basic,"Placeholder total shunt cap - target 100-200pF total incl. tonearm/cable, make trimmable/selectable on real board; X7R fine here since precision doesn't matter for this placeholder"
+J_IN (L+R),Preamp,cartridge input connector,TBD,2,TBD,Physical interface decision - reserved for user per working agreements
+J_OUT,Preamp,line output connector,TBD,1,TBD,Physical interface decision - reserved for user
+D_pol,PSU,reverse-polarity diode/Schottky,TBD package,1,Extended (typical),SAFETY-SENSITIVE - exact part/rating reserved for user sign-off
+F1,PSU,fuse (rating TBD),fuse holder + fuse or PTC,1,TBD,SAFETY-SENSITIVE - exact rating reserved for user sign-off
+C_bulk,PSU,470uF,electrolytic THT/SMD,1,Extended (est.),Raw-rail (VRAW) reservoir/filter cap
+Rvg1,PSU,10k,0805 1%,1,Basic,Virtual-ground divider (top)
+Rvg2,PSU,10k,0805 1%,1,Basic,Virtual-ground divider (bottom)
+Cvg,PSU,10uF,X7R 0805 (or electrolytic),1,Basic if X7R (within JLCPCB's 10nF-10uF X7R Basic range),Virtual-ground node filter cap
+U_VG,PSU,virtual-ground buffer op-amp (generic) or dedicated splitter IC (e.g. TLE2426),TBD package,1,TBD,"Not audio-critical - doesn't need OPA1642-grade specs. Consider TLE2426 (dedicated rail-splitter IC) instead of a discrete divider+buffer to reduce part count - not yet finalized"
+J_PWR,PSU,DC power input connector,TBD,1,TBD,Physical interface decision - reserved for user per working agreements
+--- MOTOR BRANCH ---,PSU,BLACK BOX - not yet designed,N/A,N/A,N/A,"See motor-branch-interface-spec.md - real components TBD pending motor selection; must meet 200mA continuous budget, star-ground return, and <=50mV pk-pk conducted noise requirements"
