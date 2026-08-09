@@ -104,7 +104,7 @@ worst_phase_deg = abs(dPhasedP) * sigma';
 %% Ideal IEC-amended RIAA target curve, for comparison only
 T1 = 3180e-6; T2 = 318e-6; T3 = 75e-6; T4 = 7950e-6;   % 50Hz, 500Hz, 2122Hz, 20Hz(IEC)
 s_jw  = 1i*w;
-Hriaa = (1 + s_jw*T2) ./ ((1 + s_jw*T1) .* (1 + s_jw*T3) .* (1 + s_jw*T4));
+Hriaa = (1 - s_jw*T2) ./ ((1 - s_jw*T1) .* (1 - s_jw*T3) .* (1 - s_jw*T4));
 Hriaa_dB = 20*log10(abs(Hriaa));
 
 % Normalize both curves to 0 dB at 1 kHz for a fair shape comparison
@@ -122,7 +122,7 @@ upper3 = mag0_dB_norm + k_sigma*sigma_mag_dB;
 lower3 = mag0_dB_norm - k_sigma*sigma_mag_dB;
 
 fill([f, fliplr(f)], [upper3', fliplr(lower3')], [0.85 0.90 1.0], ...
-     'EdgeColor', 'none', 'FaceAlpha', 0.6, ...
+     'EdgeColor', 'none', 'FaceAlpha', 1.0, ...
      'DisplayName', sprintf('\\pm%d\\sigma (RSS, realistic spread)', k_sigma));
 hold on;
 plot(f, mag0_dB_norm + worst_mag_dB, 'r--', 'DisplayName', 'Worst case (all parts unlucky)');
@@ -150,7 +150,7 @@ subplot(2,1,2);
 upperP = phase0deg + k_sigma*sigma_phase_deg;
 lowerP = phase0deg - k_sigma*sigma_phase_deg;
 fill([f, fliplr(f)], [upperP', fliplr(lowerP')], [0.85 0.90 1.0], ...
-     'EdgeColor', 'none', 'FaceAlpha', 0.6, ...
+     'EdgeColor', 'none', 'FaceAlpha', 1.0, ...
      'DisplayName', sprintf('\\pm%d\\sigma (RSS)', k_sigma));
 hold on;
 plot(f, phase0deg, 'b-', 'LineWidth', 1.5, 'DisplayName', 'Nominal');
