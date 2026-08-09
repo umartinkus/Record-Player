@@ -1,2 +1,6 @@
 Testing/Data
 Circuit-Analysis/Data
+Simulation/*.log
+Simulation/*.op.raw
+Simulation/*.raw
+/Mechanical-and-System/*.asv

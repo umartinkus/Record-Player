@@ -104,7 +104,7 @@ worst_phase_deg = abs(dPhasedP) * sigma';
 %% Ideal IEC-amended RIAA target curve, for comparison only
 T1 = 3180e-6; T2 = 318e-6; T3 = 75e-6; T4 = 7950e-6;   % 50Hz, 500Hz, 2122Hz, 20Hz(IEC)
 s_jw  = 1i*w;
-Hriaa = (1 - s_jw*T2) ./ ((1 - s_jw*T1) .* (1 - s_jw*T3) .* (1 - s_jw*T4));
+Hriaa = (1 + s_jw*T2) ./ ((1 + s_jw*T1) .* (1 + s_jw*T3) .* (1 + s_jw*T4));
 Hriaa_dB = 20*log10(abs(Hriaa));
 
 % Normalize both curves to 0 dB at 1 kHz for a fair shape comparison
