@@ -72,6 +72,6 @@ function G = riaa_amp_tf(R0, C0, R1, C1, R2, C2)
     Z2 = R2 / (1 + s*R2*C2);
     % Zf = Z1 + Z2;
     % G = 1 + Zf/Zg;
-    G = (A0/s)/(1+Zg*A0/s/(Zg+Z1+Z2));
+    G = A0/(1+Zg*A0/(Zg+Z1+Z2));
     G = minreal(G);   % clean up any near-common pole/zero pairs from the tf algebra
 end
