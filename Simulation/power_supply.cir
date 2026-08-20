@@ -23,12 +23,12 @@ Rin_ideal inP inN 1G
 * are reserved for your sign-off per the project's working agreements
 * - the values below are placeholders for first-draft simulation
 * only, NOT a final safety-component selection.
-Vraw_src raw_in PGND DC 24
+Vraw_src raw_in 0 DC 24
 Dpol raw_in vraw_pol D_generic
 .model D_generic D(IS=1e-9 RS=0.05 N=1.05 BV=100)   ; generic diode approximation - CONFIRM REAL PART/RATING WITH USER
 Rfuse vraw_pol VRAW 0.05                             ; fuse modeled as its normal-operation resistance only (not a blow model) - CONFIRM RATING WITH USER
 
-Cbulk VRAW PGND 470u        ; raw-rail bulk reservoir/filter capacitor
+Cbulk VRAW 0 470u        ; raw-rail bulk reservoir/filter capacitor
 
 * --- Virtual ground generator (audio branch reference) ---
 * Reference implementation shown here: resistive divider + unity-
@@ -38,8 +38,8 @@ Cbulk VRAW PGND 470u        ; raw-rail bulk reservoir/filter capacitor
 * finalize the part - this discrete version is a first-draft
 * reference you can simulate with generic parts today.
 Rvg1 VRAW vg_sense 10k
-Rvg2 vg_sense PGND 10k
-Cvg vg_sense PGND 10u
+Rvg2 vg_sense 0 10k
+Cvg vg_sense 0 10u
 Xvg vg_sense VGND VGND IDEAL_OPAMP    ; unity-gain buffer -> VGND
 * (Replace IDEAL_OPAMP here with a real, cheap general-purpose op-amp
 * subcircuit when finalizing - this buffer isn't in the audio signal
@@ -63,10 +63,10 @@ Xvg vg_sense VGND VGND IDEAL_OPAMP    ; unity-gain buffer -> VGND
 * "the worst case the interface spec allows," not a design.
 * Steps from 0 to the 200mA continuous budget at t=2ms, held - watch
 * VGND and VRAW in the transient plot for any sag/disturbance.
-Imotor_load VRAW PGND PULSE(0 200m 2m 10u 10u 50m 100m)
+Imotor_load VRAW 0 PULSE(0 200m 2m 10u 10u 50m 100m)
 
 * --- Analysis ---
 .op
-.tran 0 20m 0 10u    ; watch V(VRAW), V(VGND) settle, then respond to the motor current step at t=2ms
+.tran 0 1000m 0 10u    ; watch V(VRAW), V(VGND) settle, then respond to the motor current step at t=2ms
 
 .end
