@@ -1,7 +1,7 @@
-/Testing/Data
-/Circuit-Analysis/Data
-/Simulation/*.log
-/Simulation/*.op.raw
-/Simulation/*.raw
-/Simulation/*.plt
-/Mechanical-and-System/*.asv
+Testing/Data
+Circuit-Analysis/Data
+Simulation/*.log
+Simulation/*.op.raw
+Simulation/*.raw
+Simulation/*.plt
+Mechanical-and-System/*.asv
