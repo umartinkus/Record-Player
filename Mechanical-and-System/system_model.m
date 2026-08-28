@@ -10,5 +10,5 @@
 % grid on;
 % legend('Velocity response','Tracking force');
 
-sys = cartridge_tf_mech*cartridge_tf_elec;
+sys = cartridge_tf_mech*cartridge_tf_elec*riaa_amp_tf;
 bode(sys)
