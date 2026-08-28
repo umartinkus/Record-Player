@@ -1,0 +1,91 @@
+* ============================================================
+* RIAA Phono Preamplifier - PSRR characterization (AC injection)
+*
+* Derived from riaa_preamp.cir (same cartridge model, loading
+* network, feedback network, and real OPA164x op-amp model) but
+* with a DIFFERENT analysis purpose: instead of sweeping the audio
+* signal path, this injects a small AC disturbance directly onto the
+* VCC supply rail and sweeps THAT, to measure how much of a rail
+* ripple actually reaches vout - i.e. PSRR and closed-loop gain
+* combined into one measured curve, using the real datasheet-derived
+* PSRR behavior that's built into OPA164x.lib (it's explicitly one
+* of the modeled parameters per the model's header comments), rather
+* than hand-multiplying a PSRR-vs-frequency datasheet reading by the
+* gain curve.
+*
+* WHY VCC ONLY (not VEE, not both): in the full system, this op-amp's
+* VCC pin maps to VRAW (the raw, only lightly-filtered rail - see
+* power_supply.cir), which is where conducted ripple/noise actually
+* shows up. VEE maps to PGND (true chassis ground), assumed quiet.
+* So injecting only on VCC matches the real noise-injection path.
+*
+* WHY Vcart IS SILENCED (AC magnitude set to 0 below): SPICE .ac is
+* a linear analysis - if Vcart's 4mV AC source were still active, at
+* every swept frequency point it would ALSO contribute to V(vout)
+* and sum with the injected-ripple contribution, since both would be
+* excited at the same frequency simultaneously. That would make it
+* impossible to read a clean "output per volt of rail ripple"
+* number off the plot. Silencing Vcart isolates the supply-to-output
+* path only. (If you later want to see a real signal + ripple
+* together, that's better done as a transient run with Vcart driven
+* by a SIN() at a musical frequency and the rail ripple at 60Hz,
+* rather than trying to separate two simultaneous .ac contributions
+* at the same swept frequency.)
+*
+* HOW TO READ THE RESULT: plot V(vout) in dB (magnitude). Because the
+* injected source Vcc_inject has unit AC magnitude (1V), the dB(vout)
+* trace directly equals dB(Vout/Vinjected) - no further math needed.
+* To predict the real output disturbance for an actual expected rail
+* ripple of amplitude Vripple at frequency f: read the LINEAR
+* (non-dB) magnitude at that frequency from this sweep, call it
+* H(f), then V(vout) from that ripple = H(f) * Vripple. Converting a
+* dB reading back to linear: H = 10^(dB/20).
+* ============================================================
+
+.include OPA164x/OPA164x.lib
+
+.subckt IDEAL_OPAMP inP inN out
+Ein out 0 inP inN 1MEG
+Rin_ideal inP inN 1G
+.ends IDEAL_OPAMP
+
+* --- Op-amp supply rails, with unit AC ripple injected on VCC ---
+* Vcc_dc is the "clean" internal 12V reference; Vcc_inject is a
+* series source that adds a 1V-magnitude AC perturbation on top of
+* it at whatever frequency the .ac sweep is currently at. DC
+* operating point is untouched (AC-only sources default to 0V DC).
+Vcc_dc VCC_dc 0 DC 12
+Vcc_inject VCC VCC_dc AC 1 0
+Vee VEE 0 DC -12
+
+* --- Cartridge equivalent circuit (Audio-Technica AT-VM95E) ---
+* AC magnitude set to 0 - see header note. DC/coil model unchanged
+* so DC bias and loading are identical to the normal riaa_preamp.cir.
+Vcart cart_emf 0 AC 0 0
+Rcoil cart_emf cart_mid 485
+Lcoil cart_mid vin 550m
+
+* --- Cartridge loading network, at the preamp input node ---
+Rin_load vin 0 47k
+Cload vin 0 150p
+
+* --- Op-amp: real OPA164x model ---
+X1 vin fb VCC VEE vout OPA164x
+
+* --- Feedback network: R0/C0 ground leg ---
+R0 fb nA 1k
+C0 nA 0 8.2u
+
+* --- Feedback network: R1||C1 in series with R2||C2 ---
+R1 vout nB 511k
+C1 vout nB 6.2n
+R2 nB fb 43.2k
+C2 nB fb 1.8n
+
+* --- Analysis ---
+* Same frequency range as the normal RIAA sweep, so you can eyeball
+* both plots side by side if useful.
+.ac dec 100 10 100k
+.op
+
+.end

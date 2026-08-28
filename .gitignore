@@ -4,4 +4,5 @@ Simulation/*.log
 Simulation/*.op.raw
 Simulation/*.raw
 Simulation/*.plt
+Simulation/*.fft
 Mechanical-and-System/*.asv

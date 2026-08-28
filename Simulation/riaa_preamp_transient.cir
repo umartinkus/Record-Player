@@ -1,0 +1,131 @@
+* ============================================================
+* RIAA Phono Preamplifier - motor turn-on transient (decoupled)
+*
+* Purpose: does the motor turn-on event (modeled in power_supply.cir
+* as a step to 200mA at t=2ms) produce an audible thump at vout?
+*
+* APPROACH: decoupled/one-way simulation, not a single combined
+* deck. Justification: the preamp's own current draw (~1.8mA per
+* OPA164x core, so ~3.6-5mA for a stereo pair including small signal
+* currents) is 1-2.5% of the motor's 200mA budgeted draw and well
+* under 1% of its 600mA inrush - nowhere near enough to meaningfully
+* change how VRAW/VGND respond to the motor step. So the PSU's own
+* transient response can be simulated once, in isolation (which you
+* already did - nice), and its result played INTO this file as a
+* fixed disturbance, rather than co-simulating both decks together.
+* This also sidesteps a real practical problem: OPA164x.lib has
+* several VSWITCH-based subcircuits in it (ESD clamps, overload
+* sense), and switches are exactly what makes transient sims slow
+* (small adaptive timesteps at every transition) - doing that for a
+* full combined preamp+PSU deck, doubled for stereo, could crawl.
+*
+* STATUS: got your two exported files (power_supply_tran_VGND.txt,
+* power_supply_tran_VRAW.txt - 3937 data points each, full 0-1s
+* range). They came in with a one-line text header ("time  V(vgnd)")
+* which LTspice's PWL-from-file reader won't accept (it wants pure
+* numeric pairs, nothing else) - stripped that off and saved clean
+* versions as power_supply_tran_VGND_pwl.txt and
+* power_supply_tran_VRAW_pwl.txt, referenced below. Delivered
+* alongside this file - put all three in the same folder.
+*
+* Quick read of the data before even simulating the preamp: VRAW
+* dips fast (edge at t=2ms, down to ~23.46V within ~10-20ms) then
+* recovers SLOWLY over the following several hundred ms to a small
+* steady-state offset around 23.62V (about 0.04V below the pre-step
+* 23.62V baseline) - consistent with the 200mA draw against the
+* diode+fuse's small series resistance once things settle. VGND
+* tracks at roughly half that, as expected from the resistive
+* divider. So there are really two things to watch for at vout: a
+* fast initial edge (audio-band, could read as a click) and a slow
+* multi-hundred-ms drift back to baseline (sub-audio-band, more like
+* a DC wander than a click) - worth looking at both parts of the
+* .tran plot rather than just the first few ms.
+*
+* GROUND-REFERENCE HANDLING - the part that's different from the
+* other preamp netlists: elsewhere, this channel's "0" node stands
+* in for VGND (see the integration note in riaa_preamp.cir) because
+* VGND is assumed steady. Here VGND is exactly what we're testing as
+* a MOVING quantity, so it can't be node "0" anymore (SPICE's "0" is
+* always the fixed absolute reference). Instead:
+*   - AGND (this channel's local audio ground) is driven by the
+*     exported V(vgnd) waveform, referenced to true ground.
+*   - VCC is driven by the exported V(vraw) waveform.
+*   - VEE ties directly to true ground ("0") - the PSU deck already
+*     established that PGND (the op-amp's negative supply return) IS
+*     node "0" in that file, and PGND isn't part of what's moving
+*     here, only VRAW and VGND were captured.
+*   - Every net that used to reference "0" for the audio path
+*     (cartridge return, Rin_load, Cload, C0) now references AGND
+*     instead, so the whole audio signal chain rides on the same
+*     moving reference it would in the real integrated system.
+*   - vout is still measured as an absolute node voltage (relative to
+*     true "0") - that's deliberate: it's what actually reaches the
+*     RCA jack, and comparing V(vout) against V(agnd) tells you how
+*     much of the disturbance is "the whole local ground moving
+*     together" (harmless if your output is AC-coupled - see the
+*     output-cap open item) versus something showing up
+*     asymmetrically at vout beyond what AGND itself did.
+*
+* Cartridge signal: Vcart is defined with only an AC magnitude below
+* (no SIN/PULSE/PWL time-domain spec), so for THIS .tran run it
+* contributes exactly 0V - SPICE uses an independent source's DC
+* value (defaults to 0 here) for transient analysis unless you give
+* it an explicit time-domain waveform. That's intentional: it
+* isolates the PSU-coupling effect cleanly, with no music signal
+* mixed in to confuse the read. If you want to see how this looks
+* under an actual playing signal later, swap Vcart's spec for a
+* SIN(0 4m 1k) or similar.
+* ============================================================
+
+.include OPA164x/OPA164x.lib
+
+* --- Op-amp supply rails, driven by the exported PSU transient ---
+* NOTE: adjust the two filenames below if you named your exports
+* differently. LTspice PWL-file sources hold the last value in the
+* file for any simulation time beyond the file's last timestamp, and
+* use the first value for t before the file's first timestamp - so
+* it's fine if this .tran's stop time doesn't exactly match the
+* export's length, just don't rely on anything after the file ends.
+Vcc VCC 0 PWL file="power_supply_tran_VRAW_pwl.txt"
+Vee VEE 0 DC 0
+Vagnd AGND 0 PWL file="power_supply_tran_VGND_pwl.txt"
+
+* --- Cartridge equivalent circuit (Audio-Technica AT-VM95E) ---
+* Return node changed from "0" to AGND - see header note.
+Vcart cart_emf AGND AC 4m 0
+Rcoil cart_emf cart_mid 485
+Lcoil cart_mid vin 550m
+
+* --- Cartridge loading network, at the preamp input node ---
+Rin_load vin AGND 47k
+Cload vin AGND 150p
+
+* --- Op-amp: real OPA164x model ---
+X1 vin fb VCC VEE vout OPA164x
+
+* --- Feedback network: R0/C0 ground leg ---
+* C0's return changed from "0" to AGND - see header note.
+R0 fb nA 1k
+C0 nA AGND 8.2u
+
+* --- Feedback network: R1||C1 in series with R2||C2 ---
+* Unchanged - this branch never referenced "0"/AGND directly.
+R1 vout nB 511k
+C1 vout nB 6.2n
+R2 nB fb 43.2k
+C2 nB fb 1.8n
+
+* --- Analysis ---
+* Full 1s to match the exported data range (the slow recovery tail
+* is still moving through most of that window per the data - see
+* header note - so 300ms would have cut it off). This is a much
+* simpler circuit than the combined deck would have been (one real
+* op-amp core, no PSU-side switches to resolve), so 1s should still
+* run quickly. If you only care about the fast initial edge, you can
+* shorten this back down (e.g. 0 50m 0 10u) for a quicker look.
+* Watch V(vout) and V(agnd) together - see header note on what the
+* difference between them tells you.
+.tran 0 1 0 10u
+.op
+
+.end
