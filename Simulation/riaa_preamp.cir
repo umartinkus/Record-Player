@@ -1,21 +1,31 @@
 * ============================================================
-* RIAA Phono Preamplifier - single channel (SPICE netlist, first draft)
+* RIAA Phono Preamplifier - single channel (SPICE netlist)
 *
 * Topology: Douglas Self, "Small Signal Audio Design" - single
 *   active-stage, non-inverting feedback RIAA equalizer.
 *
-* Op-amp: OPA1642 is the selected final part. This netlist uses an
-*   IDEAL_OPAMP placeholder (defined below) for first-pass topology
-*   and frequency-response verification. Swap in TI's real OPA1642
-*   SPICE subcircuit (download from TI's product page) before
-*   trusting noise, slew-rate, bandwidth, or headroom/clipping
-*   results - the ideal model below has infinite gain-bandwidth and
-*   does NOT clip at any supply rail, so it cannot show overload
-*   behavior. To swap: replace the "X1 vin fb vout IDEAL_OPAMP" line
-*   with the real part's subcircuit call (check its actual pin order
-*   in the downloaded .lib - don't assume it matches IDEAL_OPAMP's
-*   3-pin inP/inN/out order; real op-amp models usually need V+ and
-*   V- power pins too, e.g. "X1 vin fb VCC VEE vout OPA1642").
+* Op-amp: OPA1642 is the selected final part (per bom_draft.csv).
+*   STATUS: real TI model now installed. You pulled the official
+*   OPA164x PSpice macromodel (Green-Williams-Lis architecture,
+*   Final 1.3, datasheet SBOS484D) text and it's saved alongside
+*   this file as OPA164x.lib - verbatim, unmodified. This is TI's
+*   GENERIC model for the whole family: single subckt
+*   ".SUBCKT OPA164x IN+ IN- VCC VEE OUT" represents ONE amplifier
+*   core; the physical OPA1642 is two of these cores sharing one
+*   package's VCC/VEE pins (see "Stereo" note below).
+*
+*   Pin order CONFIRMED from the actual file: IN+ IN- VCC VEE OUT -
+*   this matches what I'd guessed/templated earlier, so the swap
+*   below is a direct instantiation, no reordering needed.
+*
+*   Sanity check against the project log: this model's internal
+*   quiescent-current source (I_I_Q, VCC to VEE) is DC 1.8mA - matches
+*   the 1.8mA typical Iq recorded in the op-amp selection table.
+*   Consistent with the real part, not a mismatched/wrong model.
+*
+*   IDEAL_OPAMP is kept below, unused, as a quick reference/fallback
+*   if you ever want a pure-topology check without the real model's
+*   ESD clamps, noise sources, and finite GBW in the way.
 *
 * Component values: AS-BUILT standard-value parts (nearest E96/E24
 *   to Self's exact book values - see project log for the full
@@ -26,25 +36,50 @@
 * Ground reference note: this circuit's "0" node is the AUDIO ground
 *   reference for THIS channel only. When integrating with
 *   power_supply.cir for the full system, tie this "0" to the PSU's
-*   VGND (virtual ground) net - NOT to true circuit ground/PGND. See
-*   the integration note at the bottom of power_supply.cir.
+*   VGND (virtual ground) net - NOT to true circuit ground ("0" over
+*   there is true/chassis ground, PGND). See the integration note at
+*   the bottom of power_supply.cir. (Side note while I had both files
+*   open: the repo's power_supply.cir now ties its bulk cap and
+*   virtual-ground divider directly to node "0" as true ground,
+*   rather than to a separate unconnected "PGND" label like my
+*   original draft did - that's actually a fix, not a regression.
+*   My original draft's "PGND" was never tied to SPICE's mandatory
+*   "0" reference node, which would have made that circuit float
+*   with no ground reference at all. Good catch if that was you.)
 *
-* Stereo: duplicate this entire netlist with all node names and
-*   reference designators suffixed (e.g. _L / _R) for the second
-*   channel. Both channels can share one physical OPA1642 package
-*   (channel A = one stereo channel, channel B = the other) rather
-*   than needing two separate ICs.
+* Stereo: to combine both channels in one SPICE deck, duplicate
+*   everything below this header (all node names and reference
+*   designators suffixed _L / _R) but keep only ONE
+*   ".include OPA164x.lib" line total - re-including it twice in the
+*   same deck will error with a duplicate-subcircuit-definition.
+*   Instantiate two separate X-calls (X1_L, X1_R) against the same
+*   included OPA164x subckt, both sharing the same VCC/VEE nodes -
+*   that correctly represents one physical OPA1642 package (two
+*   independent amplifier cores, one shared pair of supply pins),
+*   without needing two separate ICs.
 * ============================================================
 
 .subckt IDEAL_OPAMP inP inN out
 * Very high gain, near-infinite input impedance, zero output
 * impedance behavioral op-amp model - topology verification only.
-* No slew rate, no noise, no output clipping modeled. Standard SPICE
-* syntax (E-element), portable to LTspice, ngspice (KiCad's built-in
-* simulator), and others.
+* No slew rate, no noise, no output clipping modeled, and no power
+* pins (a behavioral E-source isn't affected by supply rails).
+* Standard SPICE syntax (E-element), portable to LTspice, ngspice
+* (KiCad's built-in simulator), and others.
 Ein out 0 inP inN 1MEG
 Rin_ideal inP inN 1G
 .ends IDEAL_OPAMP
+
+* --- Op-amp supply rails ---
+* Once you're simulating the real OPA1642, it needs actual supply
+* pins. In the full system (see power_supply.cir) this channel's
+* local "0" maps to the PSU's VGND (~12V virtual midpoint), VRAW
+* sits ~12V above that, and PGND sits ~12V below - so from the
+* op-amp's point of view, referenced to ITS OWN "0" (this channel's
+* audio ground), it sees roughly a symmetric +/-12V dual supply.
+* That's what's modeled here for standalone simulation of this file.
+Vcc VCC 0 DC 12
+Vee VEE 0 DC -12
 
 * --- Cartridge equivalent circuit (Audio-Technica AT-VM95E) ---
 * Ideal EMF source in series with the coil's DC resistance and
@@ -64,8 +99,12 @@ Rin_load vin 0 47k
 * the real on-board part trimmable/selectable rather than fixed.
 Cload vin 0 150p
 
-* --- Op-amp (placeholder - see header note above) ---
-X1 vin fb vout IDEAL_OPAMP
+* -- Op-amp: real OPA164x model (see header note above) ---
+.include OPA164x/OPA164x.lib
+X1 vin fb VCC VEE vout OPA164x
+* Fallback for pure-topology checks (no noise/clip/GBW effects):
+* comment the two lines above and uncomment this one instead:
+* X1 vin fb vout IDEAL_OPAMP
 
 * --- Feedback network: R0/C0 ground leg ---
 * Sets DC gain to unity and realizes the ~20Hz subsonic/rumble
@@ -86,10 +125,18 @@ R2 nB fb 43.2k
 C2 nB fb 1.8n
 
 * --- Analysis ---
-* AC sweep for the Bode/RIAA-conformance check (cross-check this
-* against riaa_amp_tf.m / riaa_bode_tolerance_analysis.m - with the
-* ideal op-amp above, the two should match closely since both assume
-* an ideal amplifier).
+* AC sweep for the Bode/RIAA-conformance check. Cross-check against
+* riaa_amp_tf.m / riaa_bode_tolerance_analysis.m: expect close
+* agreement through most of the audio band, with the real model
+* peeling away from the ideal-op-amp math near the top of the band
+* (finite gain-bandwidth) - that's expected, not an error. A large
+* mismatch across the whole band instead would point to a wiring or
+* pin-order mistake in the X1 line.
+* .op is also useful here as a first gut-check: it should converge
+* (no "no convergence"/singular-matrix error) and show sensible DC
+* levels - inputs/output all near VGND (0V in this standalone file,
+* since local "0" = VGND when integrated), and roughly 1.8mA drawn
+* from VCC to VEE (this op-amp's modeled quiescent current).
 .ac dec 100 10 100k
 .op
 
