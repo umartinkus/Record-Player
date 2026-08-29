@@ -101,7 +101,7 @@ Cload vin 0 150p
 
 * -- Op-amp: real OPA164x model (see header note above) ---
 .include OPA164x/OPA164x.lib
-X1 vin fb VCC VEE vout OPA164x
+X1 vin fb VCC VEE vout_raw OPA164x
 * Fallback for pure-topology checks (no noise/clip/GBW effects):
 * comment the two lines above and uncomment this one instead:
 * X1 vin fb vout IDEAL_OPAMP
@@ -119,11 +119,11 @@ C0 nA 0 8.2u
 * breakpoint is not a direct RC product - it emerges from the
 * interaction of these two branches (see Lipshitz, "On RIAA
 * Equalization Networks", JAES 1979).
-R1 vout nB 511k
-C1 vout nB 6.2n
+R1 vout_raw nB 511k
+C1 vout_raw nB 6.2n
 R2 nB fb 43.2k
 C2 nB fb 1.8n
-
+C3 vout_raw vout_ac_couple 100n
 * --- Analysis ---
 * AC sweep for the Bode/RIAA-conformance check. Cross-check against
 * riaa_amp_tf.m / riaa_bode_tolerance_analysis.m: expect close
