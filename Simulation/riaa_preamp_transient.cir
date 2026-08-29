@@ -115,6 +115,7 @@ C1 vout_raw nB 6.2n
 R2 nB fb 43.2k
 C2 nB fb 1.8n
 C3 vout_raw vout_ac_couple 100n
+Rload vout_ac_couple 0 10k
 * --- Analysis ---
 * Full 1s to match the exported data range (the slow recovery tail
 * is still moving through most of that window per the data - see
