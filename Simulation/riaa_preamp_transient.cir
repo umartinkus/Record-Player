@@ -101,7 +101,7 @@ Rin_load vin AGND 47k
 Cload vin AGND 150p
 
 * --- Op-amp: real OPA164x model ---
-X1 vin fb VCC VEE vout OPA164x
+X1 vin fb VCC VEE vout_raw OPA164x
 
 * --- Feedback network: R0/C0 ground leg ---
 * C0's return changed from "0" to AGND - see header note.
@@ -110,11 +110,11 @@ C0 nA AGND 8.2u
 
 * --- Feedback network: R1||C1 in series with R2||C2 ---
 * Unchanged - this branch never referenced "0"/AGND directly.
-R1 vout nB 511k
-C1 vout nB 6.2n
+R1 vout_raw nB 511k
+C1 vout_raw nB 6.2n
 R2 nB fb 43.2k
 C2 nB fb 1.8n
-
+C3 vout_raw vout_ac_couple 100n
 * --- Analysis ---
 * Full 1s to match the exported data range (the slow recovery tail
 * is still moving through most of that window per the data - see
