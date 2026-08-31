@@ -37,7 +37,7 @@
 %               limited (groove      limited  limited (cutter
 %               pitch), LF           midband  and stylus), HF
 %
-%   With the defaults below the corners land at ~477 Hz and ~10.4 kHz.
+%   With the defaults below, the corners land at ~477 Hz and ~10.4 kHz.
 %
 %   Consequence worth understanding: in the constant-amplitude region
 %   the demanded force is A_MAX/C2 - CONSTANT, and independent of both
@@ -171,10 +171,10 @@ for i = 1:nL
 
         Zbranch = jw*L1 + 1./(jw*C2) + R;
 
-        Hvel   = Zc1 ./ (Zc1 + Zbranch);
-        Hforce = (Zc1 .* Zbranch) ./ (Zc1 + Zbranch);
+        Hvel   = Zc1 ./ (Zc1 + Zbranch);  % tf from Ii to Io
+        Hforce = (Zc1 .* Zbranch) ./ (Zc1 + Zbranch); % Ii to Vab
 
-        f_hf(i,j) = 1 / (2*pi*sqrt(L1*C1));
+        f_hf(i,j) = 1 / (2*pi*sqrt(L1*C1)); % every row is linearly dep
 
         % Force demanded by the envelope, converted to gram-force.
         force_gf = abs(Hforce) .* v_env / DYNE_PER_GF;
