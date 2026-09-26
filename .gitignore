@@ -5,3 +5,4 @@ Simulation/*.op.raw
 Simulation/*.raw
 Simulation/*.plt
 Mechanical-and-System/*.asv
+__pycache__/
