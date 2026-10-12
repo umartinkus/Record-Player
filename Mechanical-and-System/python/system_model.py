@@ -4,6 +4,8 @@ network -> RIAA amplifier.
 Python port of system_model.m.
 """
 
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
@@ -48,4 +50,7 @@ ax_ph.set_ylabel('Phase (deg)')
 ax_ph.set_xlabel('Frequency (rad/s)')
 ax_ph.grid(True, which='both')
 
-plt.show()
+FIG_DIR = Path(__file__).resolve().parent / 'figures'
+FIG_DIR.mkdir(exist_ok=True)
+fig.savefig(FIG_DIR / 'system_model_bode.png', dpi=150)
+print(f'Saved figures to {FIG_DIR}')

@@ -3,6 +3,8 @@
 Python port of DSP.m.
 """
 
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
@@ -66,4 +68,8 @@ plt.xlabel('Frequency (log10(Hz)) ')
 plt.ylabel('Power Spectral Density (in dB) ')
 plt.legend(['Filtered LCH', 'Filtered RCH', 'Raw LCH', 'Raw RCH'])
 
-plt.show()
+FIG_DIR = Path(__file__).resolve().parent / 'figures'
+FIG_DIR.mkdir(exist_ok=True)
+bodeFig.savefig(FIG_DIR / 'riaa_filter_bode.png', dpi=150)
+filterFig.savefig(FIG_DIR / 'psd_raw_vs_filtered.png', dpi=150)
+print(f'Saved figures to {FIG_DIR}')

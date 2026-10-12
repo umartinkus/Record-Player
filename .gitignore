@@ -6,3 +6,5 @@ Simulation/*.raw
 Simulation/*.plt
 Mechanical-and-System/*.asv
 __pycache__/
+Mechanical-and-System/python/figures/
+Testing/RIAA-Filter-Design/figures/

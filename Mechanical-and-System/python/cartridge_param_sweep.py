@@ -44,6 +44,8 @@ Conveniently 1 um/mN and 1 u(cm/dyne) are numerically identical
 (both 1e-3 m/N), so datasheet compliance drops straight in.
 """
 
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
@@ -194,7 +196,10 @@ if feasible.any():
           'it has no meaning if the feasible region is L-shaped or\n'
           'disconnected. Look at the map before trusting it.')
 
-plt.show()
+FIG_DIR = Path(__file__).resolve().parent / 'figures'
+FIG_DIR.mkdir(exist_ok=True)
+fig.savefig(FIG_DIR / 'cartridge_param_sweep.png', dpi=150)
+print(f'Saved figures to {FIG_DIR}')
 
 # ------------------------------------------------------------------
 #  NOTES

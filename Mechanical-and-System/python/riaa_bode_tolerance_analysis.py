@@ -35,6 +35,8 @@ sit well inside it.
 Requires: riaa_amp_tf.py in the same directory, numpy, scipy, matplotlib.
 """
 
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
@@ -181,4 +183,7 @@ for lo, hi in bands:
     print(f'  {lo:6.0f} - {hi:6.0f} Hz: {names[worstIdx]}  '
           f'(avg contribution {contrib[worstIdx]:.4f} dB)')
 
-plt.show()
+FIG_DIR = Path(__file__).resolve().parent / 'figures'
+FIG_DIR.mkdir(exist_ok=True)
+fig.savefig(FIG_DIR / 'riaa_bode_tolerance.png', dpi=150)
+print(f'Saved figures to {FIG_DIR}')
